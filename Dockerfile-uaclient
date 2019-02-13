@@ -1,0 +1,17 @@
+FROM microsoft/dotnet:2.0-runtime AS base
+WORKDIR /uaclient
+EXPOSE 51210 
+
+FROM microsoft/dotnet:2.0-sdk AS build
+WORKDIR /src
+COPY . .
+RUN dotnet restore SampleApplications/Samples/NetCoreConsoleClient/NetCoreConsoleClient.csproj
+RUN dotnet build SampleApplications/Samples/NetCoreConsoleClient/NetCoreConsoleClient.csproj -c Release -o /uaclient
+
+FROM build AS publish
+RUN dotnet publish SampleApplications/Samples/NetCoreConsoleClient/NetCoreConsoleClient.csproj -c Release -o /uaclient
+
+FROM base as final
+WORKDIR /uaclient
+COPY --from=publish /uaclient .
+ENTRYPOINT sleep 10; dotnet NetCoreConsoleClient.dll -a opc.tcp://uaserver:51210/UA/SampleServer
